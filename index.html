@@ -176,7 +176,15 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     
-    db.enablePersistence().catch(err => console.log('Persistence warning:', err.code));
+    // --- ENABLE OFFLINE PERSISTENCE (FIX FOR NETWORK ERRORS) ---
+    db.enablePersistence()
+      .catch((err) => {
+          if (err.code == 'failed-precondition') {
+              console.log('Persistence failed: Multiple tabs open');
+          } else if (err.code == 'unimplemented') {
+              console.log('Persistence not supported by browser');
+          }
+      });
 
     // --- STATE MANAGEMENT ---
     let currentScreen = 'login';
@@ -1018,6 +1026,8 @@
 
     // --- LOGIC FUNCTIONS ---
     function switchTab(tab) {
+        // Tab Locking Validation
+        // CHANGED: Added exception - if user is COMPLETED, they can click any tab freely
         if(attendanceData.status === 'Completed') {
             currentTab = tab;
             currentScreen = 'main';
@@ -1032,9 +1042,10 @@
         currentTab = tab;
         currentScreen = 'main'; 
         
+        // Reset posttest state if re-entering and not passed
         if(tab === 'posttest' && (posttestScore === null || posttestScore < 14)) {
             currentQuizQuestion = 0;
-            userPosttestAnswers = [];
+            userPosttestAnswers = []; // Clear previous attempt answers
         }
         
         render();
@@ -1046,26 +1057,43 @@
         const qrDiv = document.getElementById('qrcode');
         let originalQrContent = null;
         
+        // CRITICAL FIX: Convert QR Canvas to Image before PDF generation
+        // We save the original content to restore it after PDF generation
         if (qrDiv) {
             const canvas = qrDiv.querySelector('canvas');
+            
+            // If it's a canvas, convert to image for the PDF generator
             if (canvas) {
-                originalQrContent = qrDiv.innerHTML;
+                originalQrContent = qrDiv.innerHTML; // Backup
                 const imgUrl = canvas.toDataURL("image/png");
                 qrDiv.innerHTML = `<img src="${imgUrl}" style="width: 150px; height: 150px; display: block;">`;
             } 
         }
 
+        // Wait a moment for DOM update before PDF generation
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // FILENAME UPDATE: REF - TITLE _ NAME
+        const safeRef = (attendanceData.cert_ref || "REF").replace(/[^a-zA-Z0-9-]/g, '');
+        const safeName = (attendanceData.fullName || "User").replace(/\s+/g, '_');
+        const safeTitle = "Service_Excellence_RA11032_Citizens_Charter";
+        
         const opt = {
             margin:       0,
-            filename:     `Certificate_${attendanceData.fullName.replace(/\s+/g, '_')}.pdf`,
+            filename:     `${safeRef}-${safeTitle}_${safeName}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true, logging: false }, 
             jsPDF:        { unit: 'px', format: [1123, 794], orientation: 'landscape' } 
         };
 
+        // Generate and save
         await html2pdf().set(opt).from(element).save();
+        
+        // Restore QR Code canvas if needed (so it remains interactive/scalable if resized)
+        if(originalQrContent && qrDiv) {
+             // Optional: reload logic or just keep image. Keeping image is fine usually.
+             // We can just leave it as image for now to prevent bugs on double-click.
+        }
     }
 
     // --- UPDATED: HANDLE LOGIN WITH REFRESH & EVALUATION FIX ---
@@ -1074,6 +1102,8 @@
         const email = document.getElementById('loginEmail').value.trim();
         const btn = document.getElementById('loginBtn');
         const originalText = btn.innerText;
+        
+        // UI Feedback for loading
         btn.innerText = "Checking records...";
         btn.disabled = true;
 
@@ -1085,14 +1115,21 @@
                 currentDocId = d.id;
                 const data = d.data();
                 
+                // --- LOAD PERSONAL DATA ---
                 attendanceData = data;
                 attendanceData.fullName = data.name;
                 
+                // --- RESTORE PROGRESS (Fixes Refresh/Lockout issues) ---
+                
+                // 1. Restore Evaluation Status (CRITICAL FIX)
                 if (data.eval_submitted) attendanceData.eval_submitted = true;
+
+                // 2. Restore Test Scores
                 if(data.pretest_completed) isPretestComplete = true;
                 if(data.pretest_score !== undefined) pretestScore = data.pretest_score;
                 if(data.posttest_score !== undefined) posttestScore = data.posttest_score;
 
+                // 3. Restore Module Progress
                 if(data.attempts) {
                     for(let i=0; i<5; i++) {
                         if(data.attempts[`module_${i+1}`]) moduleWatchComplete[i] = true;
@@ -1102,28 +1139,37 @@
                     if(data[`module_${i+1}`]) moduleQuizScores[i] = data[`module_${i+1}`];
                 }
                 
+                // IMPORTANT: Ensure window.adminDataMap is populated for the "Print/View" button to work
                 if(!window.adminDataMap) window.adminDataMap = {};
                 window.adminDataMap[currentDocId] = { ...data, id: currentDocId };
 
+                // --- INTELLIGENT ROUTING ---
                 if (data.status === 'Started') {
+                    // User exists but hasn't finished attendance form
                     currentScreen = 'attendance';
                 } else if (data.status === 'Completed') {
+                    // CHANGED: IF COMPLETED, FORCE UNLOCK
+                    // We assume everything is done if the status is 'Completed'
                     attendanceData.eval_submitted = true; 
                     currentScreen = 'main';
                     currentTab = 'certificate';
                 } else {
+                    // User is Enrolled/Completed -> Allow Entry
                     currentScreen = 'main';
+                    
+                    // Decide which tab to open based on progress
                     if (data.status === 'Completed' || (posttestScore >= 14 && data.eval_submitted)) {
                         currentTab = 'certificate';
                     } else if (posttestScore >= 14) {
-                        currentTab = 'posttest';
+                        currentTab = 'posttest'; // Needs to finish evaluation
                     } else if (isPretestComplete) {
-                        currentTab = 'modules';
+                        currentTab = 'modules'; // In the middle of training
                     } else {
-                        currentTab = 'home';
+                        currentTab = 'home'; // Just started
                     }
                 }
             } else {
+                // New User -> Create as 'Started' -> Go to Attendance
                 const countSnap = await db.collection('attendance_logs').get();
                 const count = countSnap.size + 1; 
                 const certRef = `HRDD-LDU-CERT2026-${String(count).padStart(6, '0')}`;
@@ -1148,8 +1194,11 @@
         }
     };
 
+    // --- UPDATED: HANDLE ATTENDANCE WITH NETWORK RESILIENCE ---
     window.handleAttendance = async (e) => {
         e.preventDefault();
+
+        // 1. Capture values
         const fname = document.getElementById('fname').value.trim();
         const gender = document.getElementById('gender').value;
         const emp = document.getElementById('emp').value;
@@ -1158,6 +1207,7 @@
         const idn = document.getElementById('idn').value.trim();
         const mob = document.getElementById('mob').value.trim();
 
+        // 2. Strict Validation
         if (!fname || !gender || !emp || !pos || !off || !idn || !mob) {
             alert("⚠️ Please fill out ALL fields in the Attendance Form to proceed.");
             return;
@@ -1169,7 +1219,9 @@
         submitBtn.disabled = true;
 
         try {
+            // 3. Proceed - Update status to 'Enrolled'
             attendanceData.fullName = fname;
+            
             await db.collection('attendance_logs').doc(currentDocId).update({
                 name: fname,
                 gender: gender,
@@ -1178,13 +1230,16 @@
                 office: off,
                 id_num: idn,
                 mobile: mob,
-                status: 'Enrolled' 
+                status: 'Enrolled' // Updates status to Enrolled
             });
             
             currentScreen = 'main';
             currentTab = 'home';
+            
+            // Reset score on new attempt
             pretestScore = 0; 
             currentQuizQuestion = 0;
+            
             render();
         } catch (err) {
             console.error(err);
@@ -1194,6 +1249,7 @@
         }
     };
 
+    // Helper for Quiz Clicks
     window.handleQuizClick = (idx, handlerName) => { 
         if(window[handlerName]) {
             window[handlerName](idx);
@@ -1214,6 +1270,7 @@
         render(); 
     };
     
+    // Updated Logic: Only store answer, calculate later
     window.handlePosttestMatching = (idx) => { 
         const q = pretestMatchingQuestions[currentQuizQuestion];
         const isCorrect = (idx === q.correct);
@@ -1246,13 +1303,13 @@
         btn.disabled = true;
 
         for(let i=0; i<5; i++) {
-            const val = document.getElementById(`pt2-${i}`).value; 
+            const val = document.getElementById(`pt2-${i}`).value; // reusing ID but checking context
             const ansBool = val === 'T';
             const isCorrect = (ansBool === trueFalseKey[i]);
             userPosttestAnswers.push({ q: trueFalseStatements[i], ans: val, correct: isCorrect });
         }
         currentQuizQuestion=6; 
-        selectedScenarioErrors = [];
+        selectedScenarioErrors = []; // Reset scenarios
         render(); 
     };
     
@@ -1267,8 +1324,8 @@
         if(btn) btn.disabled = true;
 
         let s = 0; selectedScenarioErrors.forEach(i => { if(scenarioSegments[i].isError) s++; });
-        pretestScore += s; 
-        isPretestComplete = true; 
+        pretestScore += s; // Accumulate Final Part
+        isPretestComplete = true; // Unlock Modules
         await db.collection('attendance_logs').doc(currentDocId).update({ pretest_score: pretestScore, pretest_completed: true });
         alert(`Pre-test Score: ${pretestScore}/15. Proceeding to modules.`);
         currentTab = 'modules';
@@ -1278,8 +1335,8 @@
     window.startModule = (i) => {
         currentModule = i;
         currentScreen = 'module-content';
-        isTrackingActive = false; 
-        currentWatchTime = 0; 
+        isTrackingActive = false; // Reset tracking state
+        currentWatchTime = 0; // Reset counter for new session
         render();
     };
     
@@ -1291,6 +1348,7 @@
         if(idx === m.quiz[currentQuizQuestion].correct) moduleQuizScores[currentModule]++;
         currentQuizQuestion++;
         if(currentQuizQuestion >= m.quiz.length) {
+            // Save & Check Pass
             const passed = moduleQuizScores[currentModule] >= 8;
             await db.collection('attendance_logs').doc(currentDocId).update({ [`module_${currentModule+1}`]: moduleQuizScores[currentModule] });
             alert(passed ? "Module Passed!" : "Failed. Retry.");
@@ -1306,17 +1364,20 @@
         const btn = document.querySelector('button[onclick="submitPosttestFinal()"]');
         if(btn) btn.disabled = true;
 
+        // 1. Calculate Score from Part 1 & 2 (Stored in userPosttestAnswers)
         let totalScore = 0;
         userPosttestAnswers.forEach(ans => {
             if(ans.correct) totalScore++;
         });
 
+        // 2. Calculate Score from Part 3 (Current selection)
         let part3Score = 0;
         selectedScenarioErrors.forEach(idx => {
             if(scenarioSegments[idx].isError) part3Score++;
         });
         totalScore += part3Score;
 
+        // 3. Save Log
         userPosttestAnswers.push({ q: "Scenario Analysis", ans: selectedScenarioErrors, score: part3Score });
         
         await db.collection('quiz_logs').add({
@@ -1329,42 +1390,50 @@
             timestamp: new Date().toISOString()
         });
 
+        // 4. Validate Pass/Fail
         if(totalScore >= 14) {
             posttestScore = totalScore;
             await db.collection('attendance_logs').doc(currentDocId).update({ posttest_score: totalScore, status: 'Completed', completion_time: new Date().toISOString() });
             alert(`Passed! Score: ${totalScore}/15`);
-            currentTab = 'posttest'; 
+            currentTab = 'posttest'; // Refreshes to show "Passed" screen
         } else {
             alert(`Failed. Score: ${totalScore}/15. You need 14 (90%). Please review and try again.`);
             posttestScore = null;
-            currentQuizQuestion = 0; 
-            userPosttestAnswers = []; 
+            currentQuizQuestion = 0; // Reset to start
+            userPosttestAnswers = []; // Clear answers
         }
         render();
     };
     
+    // --- UPDATED: HANDLE EVALUATION WITH DATABASE WRITE & CERT UNLOCK ---
     window.handleEvaluation = async (e) => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('button');
         const originalText = submitBtn.innerText;
-        submitBtn.innerText = "Generating Certificate..."; 
+        submitBtn.innerText = "Generating Certificate..."; // User feedback "Generating"
         submitBtn.disabled = true;
 
         try {
+            // 1. Capture Rating Data from hidden inputs
             let ratings = {};
             for(let i=0; i<15; i++) {
                 const el = document.getElementById(`eval-${i}`);
                 if(el) ratings[`item_${i}`] = el.value;
             }
 
+            // 2. SAVE TO DATABASE (CRITICAL FIX)
+            // We use a batch write to ensure both logs update or fail together
             const batch = db.batch();
+            
+            // A. Update the user's main log
             const userRef = db.collection('attendance_logs').doc(currentDocId);
             batch.update(userRef, {
                 eval_submitted: true,
-                status: 'Completed',
+                status: 'Completed', // Mark fully complete
                 completion_time: new Date().toISOString()
             });
 
+            // B. Add the detailed evaluation
             const evalRef = db.collection('evaluations').doc();
             batch.set(evalRef, {
                 userId: currentDocId,
@@ -1375,13 +1444,16 @@
 
             await batch.commit();
 
+            // 3. Update Local State
             attendanceData.eval_submitted = true;
-            attendanceData.status = 'Completed'; 
-            attendanceData.completion_time = new Date().toISOString(); 
+            attendanceData.status = 'Completed'; // Ensure local status is updated for tab locking logic
+            attendanceData.completion_time = new Date().toISOString(); // Important for cert date
             
+            // Populate adminDataMap for this user so "Print" button works immediately
             if(!window.adminDataMap) window.adminDataMap = {};
             window.adminDataMap[currentDocId] = { ...attendanceData, id: currentDocId };
 
+            // 4. Proceed
             alert("Evaluation submitted! Redirecting to your certificate...");
             currentTab = 'certificate';
             currentScreen = 'main';
@@ -1389,11 +1461,18 @@
 
         } catch (error) {
             console.error("Evaluation Error:", error);
+            // Even if network fails (offline), Firestore persistence might handle it, 
+            // but if it throws a real error, we should let them proceed locally if possible?
+            // The catch block in previous turn handled "Network Error". 
+            // With persistence, the await batch.commit() might hang or behave differently depending on config.
+            // But usually it resolves locally. 
+            // If it fails strictly:
             alert("Note: Saved locally due to network. Generating certificate now...");
             attendanceData.eval_submitted = true;
             attendanceData.status = 'Completed';
             attendanceData.completion_time = new Date().toISOString();
             
+            // Populate adminDataMap locally
             if(!window.adminDataMap) window.adminDataMap = {};
             window.adminDataMap[currentDocId] = { ...attendanceData, id: currentDocId };
             
@@ -1402,17 +1481,20 @@
         }
     };
     
-    window.rateItem = (i, s) => { document.getElementById(`eval-${i}`).value = s; document.querySelector(`[data-idx="${i}"]`).innerHTML = [1,2,3,4,5].map(v => `<span onclick="rateItem(${i}, ${v})" class="rating-star ${v<=s?'filled':'empty'} text-xl" data-val="${v}">★</span>`).join(''); };
+    // Evaluation Stars Helper
+    window.rateItem = (i, s) => { document.getElementById(`eval-${i}`).value = s; /* Visual update logic */ document.querySelector(`[data-idx="${i}"]`).innerHTML = [1,2,3,4,5].map(v => `<span onclick="rateItem(${i}, ${v})" class="rating-star ${v<=s?'filled':'empty'} text-xl" data-val="${v}">★</span>`).join(''); };
 
     // Admin Render (Updated)
     window.verifyAdmin = function() {
         if(document.getElementById('admin-pass').value === 'hrdd2O26') {
+            // 2FA Simulation
             alert("Verification code sent to hrddldu@gmail.com");
             const code = prompt("Enter 6-digit verification code:");
             if(code === "267588") {
                 document.getElementById('login-modal').style.display = 'none';
                 currentScreen = 'admin';
                 render();
+                // In a real app, we would load data here
                 loadAdminData(); 
             } else {
                 alert("Invalid Code");
@@ -1425,6 +1507,7 @@
             const snap = await db.collection('attendance_logs').orderBy('timestamp', 'desc').get();
             const evalSnap = await db.collection('evaluations').get();
             
+            // Cache data for cert generation
             window.adminDataMap = {};
             
             let evalMap = {};
@@ -1440,12 +1523,13 @@
             let html = '';
             snap.forEach(doc => {
                 const d = doc.data();
+                // Store data for generator
                 window.adminDataMap[doc.id] = { ...d, id: doc.id };
                 
                 const start = d.timestamp ? new Date(d.timestamp).toLocaleDateString() : '-';
                 const end = d.completion_time ? new Date(d.completion_time).toLocaleDateString() : '-';
                 const evalAvg = evalMap[doc.id] || '-';
-                const certRef = d.cert_ref || "PENDING"; 
+                const certRef = d.cert_ref || "PENDING"; // REF DISPLAY
 
                 html += `<tr>
                     <td class="font-bold">${d.name || d.email}</td>
@@ -1517,6 +1601,9 @@
     
     // Admin Generator Function
     window.generateCertForAdmin = (uid) => {
+        // If coming from trainee view, data might be in attendanceData not adminDataMap if map isn't fully loaded
+        // BUT we populated window.adminDataMap in handleLogin and handleEvaluation
+        
         const d = window.adminDataMap ? window.adminDataMap[uid] : attendanceData;
         
         if(!d) return alert("User data not found");
