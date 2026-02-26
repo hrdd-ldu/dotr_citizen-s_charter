@@ -171,6 +171,9 @@
   </div>
 
   <script>
+    // --- BINARY HELPER FUNCTION ---
+    const _b = bin => bin.split(' ').map(x => String.fromCharCode(parseInt(x, 2))).join('');
+
     // --- FIREBASE INIT ---
     const firebaseConfig = { apiKey: "AIzaSyAsglkyvOo52izdT7JRBKSU3MLuPhGQAFY", authDomain: "dotr-training.firebaseapp.com", projectId: "dotr-training", storageBucket: "dotr-training.firebasestorage.app", messagingSenderId: "159217803126", appId: "1:159217803126:web:ca4c064d94a1130512e457", measurementId: "G-7E8NH1WRJ1" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -191,7 +194,7 @@
     let currentTab = 'home';
     let currentDocId = null;
     let attendanceData = {};
-    let isProcessing = false; // NEW: Global Lock for Buttons
+    let isProcessing = false; 
     
     // Learning State
     let currentModule = 0;
@@ -272,16 +275,16 @@
             durationSeconds: 357, 
             videoEmbed: "https://drive.google.com/file/d/1XQClQZAwPQVLUV8_RIkI_AwY13O8V8K6/preview",
             quiz: [
-                { q: "What is the primary goal of RA 11032?", options: ["A. To increase government revenue through higher business permit fees.", "B. To streamline government services by reducing bureaucratic red tape and averting graft.", "C. To mandate all citizens to register their personal businesses with national agencies.", "D. To provide financial subsidies to small and medium enterprises during the registration process."], correct: 1 },
-                { q: "Which agency is specifically created and tasked to oversee the national implementation of RA 11032?", options: ["A. Anti-Red Tape Authority (ARTA).", "B. Civil Service Commission (CSC).", "C. Both A and B share equal primary oversight for implementation.", "D. Both A and C are incorrect."], correct: 0 },
-                { q: "Under the law, what is the maximum prescribed processing time for \"simple transactions\"?", options: ["A. Seven (7) working days.", "B. Five (5) working days.", "C. Three (3) working days.", "D. Two (2) working days."], correct: 2 },
-                { q: "What is the penalty for the first offense of \"fixing\" or collusion with fixers under RA 11032?", options: ["A. Administrative suspension from the service for six (6) months.", "B. Immediate dismissal from the service.", "C. Perpetual disqualification from holding public office.", "D. Both B and C are correct."], correct: 3 },
-                { q: "How are agencies mandated to publish their service standards (Citizen’s Charter)?", options: ["A. Through conspicuous billboards at the main entrance of the office.", "B. Through official websites and digital platforms.", "C. Both A and B are correct.", "D. Both A and B are incorrect."], correct: 2 },
-                { q: "RA 11032 is also known as the Ease of Doing Business and Efficient Government Service Delivery Act of 2018.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "RA 11032 was enacted and signed into law in the year 2015.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "RA 11032 applies only to national government agencies and does not cover local government units (LGUs) or GOCCs.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "The law mandates the use of technology, such as the establishment of a Central Business Portal, to improve service delivery.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "One of the main objectives of the law is to promote integrity and accountability in government by reducing bureaucratic red tape.", options: ["TRUE", "FALSE"], correct: 0 }
+                { q: "What is the primary goal of RA 11032?", options: ["A. To increase government revenue through higher business permit fees.", "B. To streamline government services by reducing bureaucratic red tape and averting graft.", "C. To mandate all citizens to register their personal businesses with national agencies.", "D. To provide financial subsidies to small and medium enterprises during the registration process."], correct: 0b0001 },
+                { q: "Which agency is specifically created and tasked to oversee the national implementation of RA 11032?", options: ["A. Anti-Red Tape Authority (ARTA).", "B. Civil Service Commission (CSC).", "C. Both A and B share equal primary oversight for implementation.", "D. Both A and C are incorrect."], correct: 0b0000 },
+                { q: "Under the law, what is the maximum prescribed processing time for \"simple transactions\"?", options: ["A. Seven (7) working days.", "B. Five (5) working days.", "C. Three (3) working days.", "D. Two (2) working days."], correct: 0b0010 },
+                { q: "What is the penalty for the first offense of \"fixing\" or collusion with fixers under RA 11032?", options: ["A. Administrative suspension from the service for six (6) months.", "B. Immediate dismissal from the service.", "C. Perpetual disqualification from holding public office.", "D. Both B and C are correct."], correct: 0b0011 },
+                { q: "How are agencies mandated to publish their service standards (Citizen’s Charter)?", options: ["A. Through conspicuous billboards at the main entrance of the office.", "B. Through official websites and digital platforms.", "C. Both A and B are correct.", "D. Both A and B are incorrect."], correct: 0b0010 },
+                { q: "RA 11032 is also known as the Ease of Doing Business and Efficient Government Service Delivery Act of 2018.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "RA 11032 was enacted and signed into law in the year 2015.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "RA 11032 applies only to national government agencies and does not cover local government units (LGUs) or GOCCs.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "The law mandates the use of technology, such as the establishment of a Central Business Portal, to improve service delivery.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "One of the main objectives of the law is to promote integrity and accountability in government by reducing bureaucratic red tape.", options: ["TRUE", "FALSE"], correct: 0b0000 }
             ]
         },
         {
@@ -290,16 +293,16 @@
             durationSeconds: 482,
             videoEmbed: "https://drive.google.com/file/d/1BnL0kuuTUDMnjL-pC4PHvv_v5WQTLG8o/preview",
             quiz: [
-                { q: "Which of the following best describes the core purpose of the Citizen’s Charter as a \"service contract\"?", options: ["A. To serve as a legally binding document for the collection of additional processing fees.", "B. To provide a comprehensive list of all government employees and their respective salary grades.", "C. To establish a transparent pact that outlines service standards, processing times, and accountability mechanisms for the public.", "D. To act as a marketing tool for the Department to showcase its annual achievements and project milestones."], correct: 2 },
-                { q: "Which combination of information is strictly required to be included in an agency’s Citizen’s Charter?", options: ["A. Step-by-step procedures, required documents, fees to be paid, and the specific person responsible for each step.", "B. Internal office policies, employee attendance logs, and a list of all national holidays.", "C. Historical background of the agency, the organization’s mission-vision, and a map of all local branches.", "D. Both A and C are required under the standardized ARTA template."], correct: 0 },
-                { q: "Which of the following pieces of information is NOT a mandatory requirement for the Citizen’s Charter under RA 11032?", options: ["A. The maximum time to conclude a specific transaction.", "B. The procedure for filing complaints and providing feedback.", "C. The personal contact numbers and home addresses of the service providers.", "D. The specific amount of fees to be paid, if any."], correct: 2 },
-                { q: "Considering the mandate for transparency, which of the following is the most compliant way for an agency to approve and update its Citizen’s Charter?", options: ["A. The charter is approved by a simple majority of the rank-and-file employees and updated every five years.", "B. The charter is reviewed and updated at least once every three years or whenever a new service is introduced.", "C. The charter is approved by the head of the agency and updated only when there is a change in the national administration.", "D. The charter is approved by the Anti-Red Tape Authority (ARTA) and remains static for the duration of the agency's existence."], correct: 1 },
-                { q: "How must the Citizen's Charter be communicated to ensure it reaches all types of clients effectively?", options: ["A. It must be published exclusively in the Official Gazette to maintain legal formality.", "B. It must be written in simple, non-technical language (English, Filipino, or local dialect) and posted in visible, conspicuous areas.", "C. It must be available only upon formal written request to the agency's records officer.", "D. It must be displayed solely on high-resolution digital screens to promote the government's \"paperless\" initiative."], correct: 1 },
-                { q: "The Citizen’s Charter is considered a service contract between the government and the citizens, detailing the expectations for service delivery.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Under RA 11032, agencies are strictly required to display their Citizen's Charter in visible and conspicuous areas, such as the main entrance of their offices.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "The Citizen's Charter is required to include specific complaint and feedback mechanisms to allow for continuous service improvement.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "To ensure digital accessibility, the law mandates that the Citizen's Charter must also be accessible online through the agency's official website.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "The Citizen’s Charter only needs to be written in English to ensure a professional and standardized format across all national agencies.", options: ["TRUE", "FALSE"], correct: 1 }
+                { q: "Which of the following best describes the core purpose of the Citizen’s Charter as a \"service contract\"?", options: ["A. To serve as a legally binding document for the collection of additional processing fees.", "B. To provide a comprehensive list of all government employees and their respective salary grades.", "C. To establish a transparent pact that outlines service standards, processing times, and accountability mechanisms for the public.", "D. To act as a marketing tool for the Department to showcase its annual achievements and project milestones."], correct: 0b0010 },
+                { q: "Which combination of information is strictly required to be included in an agency’s Citizen’s Charter?", options: ["A. Step-by-step procedures, required documents, fees to be paid, and the specific person responsible for each step.", "B. Internal office policies, employee attendance logs, and a list of all national holidays.", "C. Historical background of the agency, the organization’s mission-vision, and a map of all local branches.", "D. Both A and C are required under the standardized ARTA template."], correct: 0b0000 },
+                { q: "Which of the following pieces of information is NOT a mandatory requirement for the Citizen’s Charter under RA 11032?", options: ["A. The maximum time to conclude a specific transaction.", "B. The procedure for filing complaints and providing feedback.", "C. The personal contact numbers and home addresses of the service providers.", "D. The specific amount of fees to be paid, if any."], correct: 0b0010 },
+                { q: "Considering the mandate for transparency, which of the following is the most compliant way for an agency to approve and update its Citizen’s Charter?", options: ["A. The charter is approved by a simple majority of the rank-and-file employees and updated every five years.", "B. The charter is reviewed and updated at least once every three years or whenever a new service is introduced.", "C. The charter is approved by the head of the agency and updated only when there is a change in the national administration.", "D. The charter is approved by the Anti-Red Tape Authority (ARTA) and remains static for the duration of the agency's existence."], correct: 0b0001 },
+                { q: "How must the Citizen's Charter be communicated to ensure it reaches all types of clients effectively?", options: ["A. It must be published exclusively in the Official Gazette to maintain legal formality.", "B. It must be written in simple, non-technical language (English, Filipino, or local dialect) and posted in visible, conspicuous areas.", "C. It must be available only upon formal written request to the agency's records officer.", "D. It must be displayed solely on high-resolution digital screens to promote the government's \"paperless\" initiative."], correct: 0b0001 },
+                { q: "The Citizen’s Charter is considered a service contract between the government and the citizens, detailing the expectations for service delivery.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Under RA 11032, agencies are strictly required to display their Citizen's Charter in visible and conspicuous areas, such as the main entrance of their offices.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "The Citizen's Charter is required to include specific complaint and feedback mechanisms to allow for continuous service improvement.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "To ensure digital accessibility, the law mandates that the Citizen's Charter must also be accessible online through the agency's official website.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "The Citizen’s Charter only needs to be written in English to ensure a professional and standardized format across all national agencies.", options: ["TRUE", "FALSE"], correct: 0b0001 }
             ]
         },
         {
@@ -311,16 +314,16 @@
                 "https://drive.google.com/file/d/182R0yGPqacynLDQbPgHUeW9WoNoIWDBB/preview"
             ],
             quiz: [
-                { q: "Under RA 11032, what is the prescribed maximum processing time for \"Complex Transactions\"?", options: ["A. Five (5) working days.", "B. Seven (7) working days.", "C. Ten (10) working days.", "D. Twenty (20) working days."], correct: 1 },
-                { q: "Highly technical transactions are subject to a specific time limit. What is the maximum period allowed for these types of services?", options: ["A. Fifteen (15) working days.", "B. Twenty (20) working days.", "C. Thirty (30) working days.", "D. Forty-five (45) working days."], correct: 1 },
-                { q: "When defining a service standard in the Citizen’s Charter, which set of information must be specified to ensure full compliance?", options: ["A. The total number of employees in the division and their current performance ratings.", "B. The step-by-step procedure, required documents, fees to be paid, and the specific officer responsible for each step.", "C. The historical reason for the service and the list of previous applicants for transparency.", "D. Both A and B are mandatory requirements."], correct: 1 },
-                { q: "What are the three (3) official types of transactions categorized under RA 11032?", options: ["A. Easy, Medium, and Hard.", "B. Simple, Complex, and Highly Technical.", "C. Fast, Slow, and Normal.", "D. Basic, Advanced, and Expert."], correct: 1 },
-                { q: "What is the administrative consequence for an official who fails to meet the prescribed service standards for the first time without a valid reason?", options: ["A. Immediate dismissal from the service.", "B. A verbal warning from the Personnel Development Committee (PDC).", "C. Administrative liability and potential suspension from the service for six (6) months.", "D. Mandatory reassignment to a different Regional Office."], correct: 2 },
-                { q: "Service standards define the expected quality, processing time, and fees for every government service provided to the public.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Simple transactions, which only require ministerial actions, should be completed within seven (7) working days.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "Highly technical transactions have no specific time limit due to their complexity and the multi-stage evaluation required.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "To ensure accountability, the Citizen's Charter must clearly state any fees that are to be paid by the client.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Service standards must be realistic and achievable to ensure they can be institutionalized within the agency's performance management system.", options: ["TRUE", "FALSE"], correct: 0 }
+                { q: "Under RA 11032, what is the prescribed maximum processing time for \"Complex Transactions\"?", options: ["A. Five (5) working days.", "B. Seven (7) working days.", "C. Ten (10) working days.", "D. Twenty (20) working days."], correct: 0b0001 },
+                { q: "Highly technical transactions are subject to a specific time limit. What is the maximum period allowed for these types of services?", options: ["A. Fifteen (15) working days.", "B. Twenty (20) working days.", "C. Thirty (30) working days.", "D. Forty-five (45) working days."], correct: 0b0001 },
+                { q: "When defining a service standard in the Citizen’s Charter, which set of information must be specified to ensure full compliance?", options: ["A. The total number of employees in the division and their current performance ratings.", "B. The step-by-step procedure, required documents, fees to be paid, and the specific officer responsible for each step.", "C. The historical reason for the service and the list of previous applicants for transparency.", "D. Both A and B are mandatory requirements."], correct: 0b0001 },
+                { q: "What are the three (3) official types of transactions categorized under RA 11032?", options: ["A. Easy, Medium, and Hard.", "B. Simple, Complex, and Highly Technical.", "C. Fast, Slow, and Normal.", "D. Basic, Advanced, and Expert."], correct: 0b0001 },
+                { q: "What is the administrative consequence for an official who fails to meet the prescribed service standards for the first time without a valid reason?", options: ["A. Immediate dismissal from the service.", "B. A verbal warning from the Personnel Development Committee (PDC).", "C. Administrative liability and potential suspension from the service for six (6) months.", "D. Mandatory reassignment to a different Regional Office."], correct: 0b0010 },
+                { q: "Service standards define the expected quality, processing time, and fees for every government service provided to the public.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Simple transactions, which only require ministerial actions, should be completed within seven (7) working days.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "Highly technical transactions have no specific time limit due to their complexity and the multi-stage evaluation required.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "To ensure accountability, the Citizen's Charter must clearly state any fees that are to be paid by the client.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Service standards must be realistic and achievable to ensure they can be institutionalized within the agency's performance management system.", options: ["TRUE", "FALSE"], correct: 0b0000 }
             ]
         },
         {
@@ -329,16 +332,16 @@
             durationSeconds: 217,
             videoEmbed: "https://drive.google.com/file/d/13D5CVOT-FqeYY2i5lPNSeeOoAVMLhq71/preview",
             quiz: [
-                { q: "Which of the following is the mandated first step for a government agency to begin the reengineering of its systems under RA 11032?", options: ["A. To designate a specific Anti-Red Tape Officer to lead all individual department evaluations.", "B. To conduct a \"Cost-Compliance Analysis\" and \"Time and Motion Study\" to evaluate current transaction systems.", "C. To immediately dismiss all personnel who have been involved in past \"fixing\" incidents.", "D. To upload the existing Citizen's Charter to a social media platform for public commenting."], correct: 1 },
-                { q: "What is the specific role of the Anti-Red Tape Authority (ARTA) in relation to other government agencies?", options: ["A. To act as the primary legal counsel for all government employees accused of graft.", "B. To set salary grades and performance bonuses for agencies that reduce their processing times.", "C. To implement a national policy on anti-red tape, monitor agency compliance, and investigate complaints.", "D. To provide the direct funding for the automation of local government business permitting systems."], correct: 2 },
-                { q: "Under the law, which of the following actions constitutes \"fixing\"?", options: ["A. An employee correcting a typo on a permit to ensure the applicant does not have to return the next day.", "B. Any individual facilitating the speedy completion of a transaction for monetary gain or any other advantage.", "C. A supervisor reviewing a complex transaction to ensure it meets technical health and safety standards.", "D. A security guard directing a citizen to the correct window for a simple transaction."], correct: 1 },
-                { q: "How often must government agencies submit their consolidated Client Satisfaction Measurement (CSM) results to the Authority?", options: ["A. On a quarterly basis to align with the government's fiscal spending reports.", "B. On or before the last working day of January of every year.", "C. Only when the agency's Report Card Survey (RCS) grade falls below a \"passing\" mark.", "D. Every three years, coinciding with the mandatory update of the Citizen’s Charter."], correct: 1 },
-                { q: "Which system is officially used to refer to and handle complaints involving violations of RA 11032 within an agency?", options: ["A. The agency's internal \"Suggestion Box\" found in the lobby.", "B. The Committee on Anti-Red Tape (CART) and/or the agency's Legal Office.", "C. The Human Resource Merit Selection and Promotion Board (HRMSPB).", "D. The personal email of the Department Secretary."], correct: 1 },
-                { q: "All government agencies, including those located abroad (such as embassies), are mandated to comply with RA 11032.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Agencies are required to designate a \"Committee on Anti-Red Tape\" (CART) rather than a single individual officer to ensure compliance.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "The Report Card Survey (RCS) is a holistic tool conducted by ARTA to measure the effectiveness of an agency's Citizen's Charter.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Client feedback is optional, and agencies may choose not to embed satisfaction measurements in their process improvements.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "Non-compliance with the prescribed processing times (3-7-20 days) can result in administrative sanctions, including a six-month suspension for the first offense.", options: ["TRUE", "FALSE"], correct: 0 }
+                { q: "Which of the following is the mandated first step for a government agency to begin the reengineering of its systems under RA 11032?", options: ["A. To designate a specific Anti-Red Tape Officer to lead all individual department evaluations.", "B. To conduct a \"Cost-Compliance Analysis\" and \"Time and Motion Study\" to evaluate current transaction systems.", "C. To immediately dismiss all personnel who have been involved in past \"fixing\" incidents.", "D. To upload the existing Citizen's Charter to a social media platform for public commenting."], correct: 0b0001 },
+                { q: "What is the specific role of the Anti-Red Tape Authority (ARTA) in relation to other government agencies?", options: ["A. To act as the primary legal counsel for all government employees accused of graft.", "B. To set salary grades and performance bonuses for agencies that reduce their processing times.", "C. To implement a national policy on anti-red tape, monitor agency compliance, and investigate complaints.", "D. To provide the direct funding for the automation of local government business permitting systems."], correct: 0b0010 },
+                { q: "Under the law, which of the following actions constitutes \"fixing\"?", options: ["A. An employee correcting a typo on a permit to ensure the applicant does not have to return the next day.", "B. Any individual facilitating the speedy completion of a transaction for monetary gain or any other advantage.", "C. A supervisor reviewing a complex transaction to ensure it meets technical health and safety standards.", "D. A security guard directing a citizen to the correct window for a simple transaction."], correct: 0b0001 },
+                { q: "How often must government agencies submit their consolidated Client Satisfaction Measurement (CSM) results to the Authority?", options: ["A. On a quarterly basis to align with the government's fiscal spending reports.", "B. On or before the last working day of January of every year.", "C. Only when the agency's Report Card Survey (RCS) grade falls below a \"passing\" mark.", "D. Every three years, coinciding with the mandatory update of the Citizen’s Charter."], correct: 0b0001 },
+                { q: "Which system is officially used to refer to and handle complaints involving violations of RA 11032 within an agency?", options: ["A. The agency's internal \"Suggestion Box\" found in the lobby.", "B. The Committee on Anti-Red Tape (CART) and/or the agency's Legal Office.", "C. The Human Resource Merit Selection and Promotion Board (HRMSPB).", "D. The personal email of the Department Secretary."], correct: 0b0001 },
+                { q: "All government agencies, including those located abroad (such as embassies), are mandated to comply with RA 11032.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Agencies are required to designate a \"Committee on Anti-Red Tape\" (CART) rather than a single individual officer to ensure compliance.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "The Report Card Survey (RCS) is a holistic tool conducted by ARTA to measure the effectiveness of an agency's Citizen's Charter.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Client feedback is optional, and agencies may choose not to embed satisfaction measurements in their process improvements.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "Non-compliance with the prescribed processing times (3-7-20 days) can result in administrative sanctions, including a six-month suspension for the first offense.", options: ["TRUE", "FALSE"], correct: 0b0000 }
             ]
         },
         {
@@ -347,16 +350,16 @@
             durationSeconds: 159,
             videoEmbed: "https://drive.google.com/file/d/1z84WYZVTw8IEt_3pSRBxammoCLw-T3NI/preview",
             quiz: [
-                { q: "To achieve a \"PRIME-HRM\" culture of excellence, which technology would most effectively bridge the gap between internal processing and client transparency?", options: ["A. A closed-circuit television (CCTV) system for monitoring employee attendance.", "B. An Integrated Electronic Business Permits and Licensing System (eBPLS) or eGovPH Super App integration.", "C. A private internal database accessible only to Division Chiefs.", "D. Both A and C are incorrect."], correct: 1 },
-                { q: "Which of the following is considered a \"best practice\" for ensuring that a government agency stays responsive to the evolving needs of its citizens?", options: ["A. Limiting the Citizen's Charter updates to once every decade to maintain consistency.", "B. Implementing a \"No Noon Break\" policy and a visible Public Assistance and Complaints Desk (PACD).", "C. Relying solely on internal audits without conducting external Report Card Surveys (RCS).", "D. Both A and B are incorrect."], correct: 1 },
-                { q: "What is the most critical factor in improving client satisfaction within the public sector, according to the SERVQUAL dimensions?", options: ["A. Increasing the physical size of the office and adding more luxury amenities.", "B. Ensuring high levels of assurance and empathy through competent and helpful staff.", "C. Mandating that all transactions be completed in under 60 seconds, regardless of complexity.", "D. Both A and C are incorrect."], correct: 1 },
-                { q: "Which of the following is NOT a recommended best practice for a government agency aiming for service excellence?", options: ["A. Establishing a Committee on Anti-Red Tape (CART) to monitor compliance.", "B. Allowing \"voluntary\" facilitators to help citizens navigate the building for a small tip.", "C. Using Data Analytics to identify bottlenecks in the 3-7-20 day processing cycle.", "D. Adopting ISO 9001:2015 Quality Management Systems (QMS)."], correct: 1 },
-                { q: "How do feedback mechanisms, such as the Client Satisfaction Measurement (CSM), contribute to the principle of \"Continuous Improvement\"?", options: ["A. They provide a legal basis for the immediate termination of any employee receiving a negative comment.", "B. They offer evidence-based insights that allow agencies to identify specific service gaps and reengineer processes.", "C. They serve as the primary source for the agency's annual social media marketing content.", "D. Both A and C are incorrect."], correct: 1 },
-                { q: "Continuous improvement is a key principle of Total Quality Management (TQM) and is essential for maintaining global competitiveness in government.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Employee training is unnecessary for service excellence because the law (RA 11032) primarily focuses on automated systems and not human behavior.", options: ["TRUE", "FALSE"], correct: 1 },
-                { q: "Feedback mechanisms like drop boxes and online surveys are only useful if the agency actually uses the data to inform its Improvement Action Plan.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "Best practices in service delivery involve prioritising the needs of the users (citizens) rather than the administrative convenience of the government.", options: ["TRUE", "FALSE"], correct: 0 },
-                { q: "A \"Service Delivery Excellence Program\" (SDEP) is only required for agencies that have already achieved an \"Outstanding\" rating in their surveys.", options: ["TRUE", "FALSE"], correct: 1 }
+                { q: "To achieve a \"PRIME-HRM\" culture of excellence, which technology would most effectively bridge the gap between internal processing and client transparency?", options: ["A. A closed-circuit television (CCTV) system for monitoring employee attendance.", "B. An Integrated Electronic Business Permits and Licensing System (eBPLS) or eGovPH Super App integration.", "C. A private internal database accessible only to Division Chiefs.", "D. Both A and C are incorrect."], correct: 0b0001 },
+                { q: "Which of the following is considered a \"best practice\" for ensuring that a government agency stays responsive to the evolving needs of its citizens?", options: ["A. Limiting the Citizen's Charter updates to once every decade to maintain consistency.", "B. Implementing a \"No Noon Break\" policy and a visible Public Assistance and Complaints Desk (PACD).", "C. Relying solely on internal audits without conducting external Report Card Surveys (RCS).", "D. Both A and B are incorrect."], correct: 0b0001 },
+                { q: "What is the most critical factor in improving client satisfaction within the public sector, according to the SERVQUAL dimensions?", options: ["A. Increasing the physical size of the office and adding more luxury amenities.", "B. Ensuring high levels of assurance and empathy through competent and helpful staff.", "C. Mandating that all transactions be completed in under 60 seconds, regardless of complexity.", "D. Both A and C are incorrect."], correct: 0b0001 },
+                { q: "Which of the following is NOT a recommended best practice for a government agency aiming for service excellence?", options: ["A. Establishing a Committee on Anti-Red Tape (CART) to monitor compliance.", "B. Allowing \"voluntary\" facilitators to help citizens navigate the building for a small tip.", "C. Using Data Analytics to identify bottlenecks in the 3-7-20 day processing cycle.", "D. Adopting ISO 9001:2015 Quality Management Systems (QMS)."], correct: 0b0001 },
+                { q: "How do feedback mechanisms, such as the Client Satisfaction Measurement (CSM), contribute to the principle of \"Continuous Improvement\"?", options: ["A. They provide a legal basis for the immediate termination of any employee receiving a negative comment.", "B. They offer evidence-based insights that allow agencies to identify specific service gaps and reengineer processes.", "C. They serve as the primary source for the agency's annual social media marketing content.", "D. Both A and C are incorrect."], correct: 0b0001 },
+                { q: "Continuous improvement is a key principle of Total Quality Management (TQM) and is essential for maintaining global competitiveness in government.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Employee training is unnecessary for service excellence because the law (RA 11032) primarily focuses on automated systems and not human behavior.", options: ["TRUE", "FALSE"], correct: 0b0001 },
+                { q: "Feedback mechanisms like drop boxes and online surveys are only useful if the agency actually uses the data to inform its Improvement Action Plan.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "Best practices in service delivery involve prioritising the needs of the users (citizens) rather than the administrative convenience of the government.", options: ["TRUE", "FALSE"], correct: 0b0000 },
+                { q: "A \"Service Delivery Excellence Program\" (SDEP) is only required for agencies that have already achieved an \"Outstanding\" rating in their surveys.", options: ["TRUE", "FALSE"], correct: 0b0001 }
             ]
         }
     ];
@@ -381,23 +384,23 @@
 
     const scenarioSegments = [
         { text: "The Department of Records is located on the ground floor, which is clean, well-lit, and fully accessible to PWDs and Senior Citizens. ", isError: false },
-        { text: "Upon entry, you notice the Citizen's Charter is printed on a small, faded piece of paper hidden behind a plant in the corner. ", isError: true, id: 1 }, 
+        { text: "Upon entry, you notice the Citizen's Charter is printed on a small, faded piece of paper hidden behind a plant in the corner. ", isError: true, id: 0b0001 }, 
         { text: "The staff members at the front desk are wearing their official IDs and uniforms properly. ", isError: false },
-        { text: "When you ask to process a request, the officer informs you of a 'mandatory snacks fee' of 50 pesos which is not listed in the Charter. ", isError: true, id: 2 },
+        { text: "When you ask to process a request, the officer informs you of a 'mandatory snacks fee' of 50 pesos which is not listed in the Charter. ", isError: true, id: 0b0010 },
         { text: "The processing time for the document is clearly stated as '3 to 7 working days' depending on complexity. ", isError: false },
-        { text: "You notice the feedback and complaints box is sealed shut with tape and placed behind the guard's desk where no one can reach it. ", isError: true, id: 3 },
+        { text: "You notice the feedback and complaints box is sealed shut with tape and placed behind the guard's desk where no one can reach it. ", isError: true, id: 0b0011 },
         { text: "The step-by-step procedure is followed according to the flowchart. ", isError: false },
-        { text: "The checklist of requirements includes 'any other document the officer feels like asking for' rather than a specific list. ", isError: true, id: 4 },
+        { text: "The checklist of requirements includes 'any other document the officer feels like asking for' rather than a specific list. ", isError: true, id: 0b0100 },
         { text: "The Service Pledge is proudly displayed in the lobby. ", isError: false },
-        { text: "Finally, the contact number provided for the Presidential Complaints Center is a disconnected mobile number.", isError: true, id: 5 }
+        { text: "Finally, the contact number provided for the Presidential Complaints Center is a disconnected mobile number.", isError: true, id: 0b0101 }
     ];
 
     const pretestMatchingQuestions = [
-      { question: "Service Standards", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 2 },
-      { question: "Vision/Mission", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 3 },
-      { question: "Redress Mechanism", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0 },
-      { question: "Checklist of Requirements", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 1 },
-      { question: "Flowchart", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 4 }
+      { question: "Service Standards", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0b0010 },
+      { question: "Vision/Mission", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0b0011 },
+      { question: "Redress Mechanism", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0b0000 },
+      { question: "Checklist of Requirements", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0b0001 },
+      { question: "Flowchart", options: ["A. How citizens can file a complaint.", "B. The list of fees and required documents.", "C. The specific \"promise\" of time and quality.", "D. The overarching goal of the agency.", "E. A visual guide of the step-by-step process."], correct: 0b0100 }
     ];
 
     const trueFalseStatements = [
@@ -407,7 +410,8 @@
         "The Charter should specify the maximum time allowed for each transaction.",
         "Only the head of the agency should be involved in drafting the Charter."
     ];
-    const trueFalseKey = [false, true, false, true, false];
+    // Encoded Booleans via binary literals
+    const trueFalseKey = [!0b1, !!0b1, !0b1, !!0b1, !0b1];
 
     // --- RENDER MAIN ---
     function render() {
@@ -1484,13 +1488,16 @@
     // Evaluation Stars Helper
     window.rateItem = (i, s) => { document.getElementById(`eval-${i}`).value = s; /* Visual update logic */ document.querySelector(`[data-idx="${i}"]`).innerHTML = [1,2,3,4,5].map(v => `<span onclick="rateItem(${i}, ${v})" class="rating-star ${v<=s?'filled':'empty'} text-xl" data-val="${v}">★</span>`).join(''); };
 
-    // Admin Render (Updated)
+    // Admin Render (Updated with decoded binary check)
     window.verifyAdmin = function() {
-        if(document.getElementById('admin-pass').value === 'hrdd2O26') {
+        const expectedPass = _b('01101000 01110010 01100100 01100100 00110010 01001111 00110010 00110110');
+        const expectedCode = _b('00110010 00110110 00110111 00110101 00111000 00111000');
+        
+        if(document.getElementById('admin-pass').value === expectedPass) {
             // 2FA Simulation
             alert("Verification code sent to hrddldu@gmail.com");
             const code = prompt("Enter 6-digit verification code:");
-            if(code === "267588") {
+            if(code === expectedCode) {
                 document.getElementById('login-modal').style.display = 'none';
                 currentScreen = 'admin';
                 render();
