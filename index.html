@@ -472,7 +472,7 @@
                 <form onsubmit="handleAttendance(event)" class="space-y-6">
                     <div>
                         <label class="block font-semibold text-sky-900 mb-2">Full Name</label>
-                        <input type="text" id="fname" required placeholder="FIRST NAME, MIDDLE INITIAL, LAST NAME" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-sky-900 outline-none">
+                        <input type="text" id="fname" required placeholder="FIRST NAME, MIDDLE INITIAL, LAST NAME" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-sky-900 outline-none uppercase">
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -618,7 +618,7 @@
                 <button onclick="switchTab('modules')" class="bg-sky-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-800">Proceed to Modules →</button>
             </div>`;
         }
-        // Active Quiz Mode (Reusing previous render logic)
+        // Active Quiz Mode
         return renderPretestQuiz();
     }
 
@@ -699,7 +699,7 @@
             <h2 class="text-2xl font-extrabold text-sky-900 mb-6">${title} (${currentQuizQuestion+1}/5)</h2>
             <div class="bg-sky-50 p-6 rounded-xl border-l-4 border-sky-900 mb-8">
                 <p class="text-xl font-bold text-sky-900 mb-2">Match the Charter Component</p>
-                <p class="text-slate-600 text-justify">Select the component on the left, then select its purpose on the right.</p>
+                <p class="text-slate-600 text-justify">Select the component on the left, then select investments purpose on the right.</p>
             </div>
             <div class="grid grid-cols-2 gap-8">
                 <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-400">
@@ -864,7 +864,7 @@
             
             <div class="prose text-slate-700 mb-8 text-justify">${m.desc}</div>
             
-            <button id="quiz-btn" ${isWatched?'':'disabled'} onclick="clearInterval(watchTimerInterval); currentScreen='module-quiz'; currentQuizQuestion=0; render()" class="w-full p-4 bg-sky-900 text-white font-bold rounded-xl ${isWatched?'':'btn-disabled'}">${isWatched?'Take Quiz':'Locked (Watch Video)'}</button>
+            <button id="quiz-btn" ${isWatched?'':'disabled'} onclick="clearInterval(watchTimerInterval); currentScreen='module-quiz'; currentQuizQuestion=0; moduleQuizScores[currentModule]=0; render()" class="w-full p-4 bg-sky-900 text-white font-bold rounded-xl ${isWatched?'':'btn-disabled'}">${isWatched?'Take Quiz':'Locked (Watch Video)'}</button>
         </div>`;
     }
 
@@ -1039,7 +1039,7 @@
             return;
         }
 
-        if(tab === 'modules' && !isPretestComplete) { alert("Please complete all 3 parts of the Pre-Test first."); return; }
+        if(tab === 'modules' && !isPretestComplete) { alert("Please complete all parts of the Pre-Test first."); return; }
         if(tab === 'posttest' && !moduleQuizScores.every(s => s >= 8)) { alert("Please complete all 5 Modules with a score of 80% (8/10) first."); return; }
         if(tab === 'certificate' && (posttestScore === null || posttestScore < 14 || !attendanceData.eval_submitted)) { alert("Please complete the Post-Test (14/15) and Evaluation first."); return; }
 
@@ -1121,7 +1121,8 @@
                 
                 // --- LOAD PERSONAL DATA ---
                 attendanceData = data;
-                attendanceData.fullName = data.name;
+                // Force name to uppercase if it exists from older sessions
+                attendanceData.fullName = data.name ? data.name.toUpperCase() : "";
                 
                 // --- RESTORE PROGRESS (Fixes Refresh/Lockout issues) ---
                 
@@ -1202,8 +1203,8 @@
     window.handleAttendance = async (e) => {
         e.preventDefault();
 
-        // 1. Capture values
-        const fname = document.getElementById('fname').value.trim();
+        // 1. Capture values and enforce uppercase for Full Name
+        const fname = document.getElementById('fname').value.trim().toUpperCase();
         const gender = document.getElementById('gender').value;
         const emp = document.getElementById('emp').value;
         const pos = document.getElementById('pos').value.trim();
@@ -1283,7 +1284,7 @@
         render(); 
     };
     
-    window.submitPretestPart2 = (e) => { 
+    window.submitPretestPart2 = async (e) => { 
         e.preventDefault(); 
         const btn = e.target.querySelector('button');
         if(btn.disabled) return;
@@ -1296,11 +1297,13 @@
             if(isCorrect) s++;
         }
         pretestScore += s;
-        currentQuizQuestion=6; 
+
+        // Go to Part 3
+        currentQuizQuestion = 6;
         render(); 
     };
     
-    window.submitPosttestPart2 = (e) => { 
+    window.submitPosttestPart2 = async (e) => { 
         e.preventDefault(); 
         const btn = e.target.querySelector('button');
         if(btn.disabled) return;
@@ -1312,7 +1315,9 @@
             const isCorrect = (ansBool === trueFalseKey[i]);
             userPosttestAnswers.push({ q: trueFalseStatements[i], ans: val, correct: isCorrect });
         }
-        currentQuizQuestion=6; 
+
+        // Go to Part 3
+        currentQuizQuestion = 6;
         selectedScenarioErrors = []; // Reset scenarios
         render(); 
     };
@@ -1509,6 +1514,7 @@
         } else alert("Incorrect Password");
     }
 
+    // UPDATED FUNCTION: Correctly parses rating to filter out NaNs and forces missing to 5.0
     window.loadAdminData = async function() {
         try {
             const snap = await db.collection('attendance_logs').orderBy('timestamp', 'desc').get();
@@ -1518,21 +1524,60 @@
             window.adminDataMap = {};
             
             let evalMap = {};
+            let evalSumTotal = 0;
+            let evalCountTotal = 0;
             evalSnap.forEach(e => {
                 const ed = e.data();
                 let sum = 0, count = 0;
                 if(ed.ratings) {
-                    Object.values(ed.ratings).forEach(v => { sum += parseInt(v); count++; });
-                    evalMap[ed.userId] = (sum/count).toFixed(1);
+                    Object.values(ed.ratings).forEach(v => { 
+                        let p = parseFloat(v);
+                        if (!isNaN(p)) { 
+                            sum += p; 
+                            count++; 
+                        } 
+                    });
+                    
+                    // Replace NaN with 5, calculate mean of all submitted rating components
+                    let avg = count > 0 ? (sum / count) : 5.0; 
+                    if (isNaN(avg)) avg = 5.0; // "Change all the NaN rating into 5"
+                    
+                    evalMap[ed.userId] = avg.toFixed(1);
+                    evalSumTotal += avg;
+                    evalCountTotal++;
                 }
             });
+
+            let totalTrainees = 0;
+            let completedTrainees = 0;
+            let posttestSumTotal = 0;
+            let posttestCountTotal = 0;
+            let idPrefixes = {};
 
             let html = '';
             snap.forEach(doc => {
                 const d = doc.data();
+                
+                // --- CRITICAL FIX: Ensure existing data names are capitalized here too ---
+                if (d.name) {
+                    d.name = d.name.toUpperCase();
+                }
+                
                 // Store data for generator
                 window.adminDataMap[doc.id] = { ...d, id: doc.id };
                 
+                totalTrainees++;
+                if (d.status === 'Completed' || d.posttest_score >= 14) completedTrainees++;
+                if (d.posttest_score !== undefined) {
+                    posttestSumTotal += d.posttest_score;
+                    posttestCountTotal++;
+                }
+
+                if (d.id_num && d.id_num.length >= 2) {
+                    const prefix = d.id_num.substring(0, 2).toUpperCase();
+                    idPrefixes[prefix] = (idPrefixes[prefix] || 0) + 1;
+                }
+
                 const start = d.timestamp ? new Date(d.timestamp).toLocaleDateString() : '-';
                 const end = d.completion_time ? new Date(d.completion_time).toLocaleDateString() : '-';
                 const evalAvg = evalMap[doc.id] || '-';
@@ -1564,6 +1609,28 @@
                     </td>
                 </tr>`;
             });
+
+            // Update Dashboard stats
+            const statTotal = document.getElementById('stat-total');
+            const statComp = document.getElementById('stat-completed');
+            const statAvg = document.getElementById('stat-avg');
+            const statEval = document.getElementById('stat-eval');
+
+            if(statTotal) statTotal.innerText = totalTrainees;
+            if(statComp) statComp.innerText = completedTrainees;
+            if(statAvg) statAvg.innerText = posttestCountTotal > 0 ? (posttestSumTotal / posttestCountTotal).toFixed(1) + " / 15" : "0 / 15";
+            if(statEval) statEval.innerText = evalCountTotal > 0 ? (evalSumTotal / evalCountTotal).toFixed(1) + " / 5" : "0 / 5";
+
+            const prefixDashboard = document.getElementById('id-prefix-dashboard');
+            if(prefixDashboard) {
+                let prefixHtml = '';
+                for (const [prefix, count] of Object.entries(idPrefixes)) {
+                    prefixHtml += `<div class="stat-card p-4"><div class="stat-val text-indigo-600 text-2xl">${count}</div><div class="stat-label text-xs">Prefix: ${prefix}</div></div>`;
+                }
+                if (prefixHtml === '') prefixHtml = '<div class="text-slate-500 col-span-4">No ID data available.</div>';
+                prefixDashboard.innerHTML = prefixHtml;
+            }
+
             const tbody = document.getElementById('admin-tbody');
             if(tbody) tbody.innerHTML = html;
         } catch (e) {
@@ -1583,12 +1650,16 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-4 gap-4 mb-8" id="analytics-dashboard">
+            <div class="grid grid-cols-4 gap-4 mb-4" id="analytics-dashboard">
                 <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total Trainees</div></div>
                 <div class="stat-card"><div class="stat-val text-green-600" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
                 <div class="stat-card"><div class="stat-val text-amber-600" id="stat-avg">0</div><div class="stat-label">Avg Post-Test</div></div>
                 <div class="stat-card"><div class="stat-val text-blue-600" id="stat-eval">0</div><div class="stat-label">Avg Rating</div></div>
             </div>
+
+            <h3 class="text-xl font-bold text-sky-900 mb-4 mt-8">ID No. Prefix Breakdown</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8" id="id-prefix-dashboard">
+                </div>
 
             <div class="admin-container">
                 <table class="data-table">
@@ -1744,7 +1815,7 @@
         snap.forEach(doc => {
             const d = doc.data();
             data.push({
-                Name: d.name,
+                Name: d.name ? d.name.toUpperCase() : '', // Added uppercase to Excel export just in case
                 Email: d.email,
                 Gender: d.gender,
                 Office: d.office,
